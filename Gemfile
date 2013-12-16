@@ -11,4 +11,5 @@ group :development, :test do
   gem "rack-test", :require => "rack/test"
   gem "awesome_print"
   gem "jeweler"
+  gem "activesupport-core-ext"
 end
