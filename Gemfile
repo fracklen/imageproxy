@@ -3,6 +3,7 @@ source 'http://rubygems.org'
 gem "rack"
 gem "rake"
 gem "mime-types"
+gem "unicorn"
 
 group :development, :test do
   gem "heroku"
