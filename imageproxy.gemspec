@@ -36,6 +36,7 @@ Gem::Specification.new do |s|
     "lib/imageproxy/selftest.rb",
     "lib/imageproxy/server.rb",
     "lib/imageproxy/signature.rb",
+    "lib/imageproxy/service.rb",
     "public/background.png",
     "public/sample.png",
     "public/sample_10x20.png",
