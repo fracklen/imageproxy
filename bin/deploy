@@ -1,0 +1,30 @@
+#!/bin/sh
+
+RELEASE=`date +%Y%m%d%H%M%S`
+TARBALL=/tmp/${RELEASE}.tar.gz
+RELEASE_DIR=/var/www/image_proxy/releases/${RELEASE}
+CURRENT_LINK=/var/www/image_proxy/current
+SHARED_DIR=/var/www/image_proxy/shared
+BUNDLE_DIR=${SHARED_DIR}/bundle
+
+echo "Uploading tarball to ${TARBALL}"
+git archive master | gzip | ssh lokalebasen@postal01.lokalebasen.dk "cat > ${TARBALL}"
+
+ssh lokalebasen@postal01.lokalebasen.dk "
+echo mkdir -p ${RELEASE_DIR}
+mkdir -p ${RELEASE_DIR}
+echo tar -C ${RELEASE_DIR} -zxf ${TARBALL}
+tar -C ${RELEASE_DIR} -zxf ${TARBALL}
+echo bundle install --gemfile ${RELEASE_DIR}/Gemfile --path ${BUNDLE_DIR} --without development test profiling
+bundle install --gemfile ${RELEASE_DIR}/Gemfile --path ${BUNDLE_DIR} --without development test profiling
+
+echo rm ${CURRENT_LINK}
+rm ${CURRENT_LINK}
+echo ln -sf ${RELEASE_DIR}/ ${CURRENT_LINK}
+ln -sf ${RELEASE_DIR}/ ${CURRENT_LINK}
+echo rm ${TARBALL}
+rm ${TARBALL}
+
+echo service image_proxy 2
+service image_proxy 2
+"
