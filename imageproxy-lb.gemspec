@@ -4,13 +4,13 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = "imageproxy"
+  s.name = "imageproxy-lb"
   s.version = "1.0.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Erik Hanson"]
   s.date = "2013-02-23"
-  s.description = "A image processing proxy server, written in Ruby as a Rack application. Requires ImageMagick."
+  s.description = "A image processing proxy server, written in Ruby as a Rack application. Requires ImageMagick. Lokalebasen fork."
   s.email = "erik@eahanson.com"
   s.extra_rdoc_files = [
     "LICENSE.txt",
