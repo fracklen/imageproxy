@@ -74,16 +74,15 @@ docker build -t docker.lokalebasen.dk/imageproxy $BUILD_DIR
 docker tag docker.lokalebasen.dk/imageproxy docker.lokalebasen.dk/imageproxy:$REVISION
 
 # Run it
-CONTAINER_ID=$(docker run -d -p $SERVER_LOCAL_IP::80 -p $SERVER_LOCAL_IP::1080 -p $SERVER_LOCAL_IP::8080 docker.lokalebasen.dk/imageproxy)
+CONTAINER_ID=$(docker run -d -p $SERVER_LOCAL_IP::80 docker.lokalebasen.dk/imageproxy)
 
 CONTAINER_URL=$(docker port $CONTAINER_ID 80)
 
+ssh $SERVER curl -L $ETCD_URL/v2/keys/sites-available/imageproxy/DOMAIN -XPUT -d value="imageproxy.lokalebasen.dk"
+ssh $SERVER curl -L $ETCD_URL/v2/keys/sites-available/imageproxy/ROOT -XPUT -d value="/"
 
-ssh $SERVER curl $ETCD_URL/v2/keys/sites-available/imageproxy/DOMAIN -XPUT -d value="imageproxy.lokalebasen.dk"
-ssh $SERVER curl $ETCD_URL/v2/keys/sites-available/imageproxy/ROOT -XPUT -d value="/"
+ssh $SERVER curl -L $ETCD_URL/v2/keys/imageproxy/nodes/${REVISION}/$SERVER_LOCAL_IP -XPUT -d value="$CONTAINER_URL"
+ssh $SERVER curl -L $ETCD_URL/v2/keys/imageproxy/current_revision -XPUT -d value="$REVISION"
 
-ssh $SERVER curl $ETCD_URL/v2/keys/imageproxy/nodes/${REVISION}/$SERVER_LOCAL_IP -XPUT -d value="CONTAINER_URL"
-ssh $SERVER curl $ETCD_URL/v2/keys/imageproxy/current_revision -XPUT -d value="$REVISION"
-
-ssh $SERVER curl $ETCD_URL/v2/keys/sites-enabled/imageproxy -XPUT -d value="imageproxy"
+ssh $SERVER curl -L $ETCD_URL/v2/keys/sites-enabled/imageproxy -XPUT -d value="imageproxy"
 

@@ -16,7 +16,8 @@ module Imageproxy
       request = Rack::Request.new(env)
       options = Options.new(request.path_info, request.params)
       user_agent = request.env["HTTP_USER_AGENT"]
-      cachetime = config(:cache_time) ? config(:cache_time) : 86400
+      cachetime = config(:cache_time) ? config(:cache_time) : 365 * 24 * 60 * 60
+      expires = { "Expires" => Time.now + 365 * 24 * 60 * 60 }
 
       case options.command
         when "convert", "process", nil
@@ -30,7 +31,7 @@ module Imageproxy
           end
 
           file.open
-          [200, {"Cache-Control" => "max-age=#{cachetime}, must-revalidate"}.merge(content_type(file, options)), file]
+          [200, {"Cache-Control" => "public, max-age=#{cachetime}, must-revalidate"}.merge(content_type(file, options)).merge(expires), file]
         when "identify"
           check_signature request, options
           check_domain options
