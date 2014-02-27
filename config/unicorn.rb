@@ -1,9 +1,9 @@
-worker_processes 1 # this should be >= nr_cpus
+worker_processes 3 # this should be >= nr_cpus
 listen ENV['PORT']
 
-pid         "/var/www/image_proxy/shared/pids/unicorn.pid"
-stderr_path "/var/www/image_proxy/shared/log/unicorn.log"
-stdout_path "/var/www/image_proxy/shared/log/unicorn.log"
+pid         "/var/www/imageproxy/shared/pids/unicorn.pid"
+stderr_path "/var/www/imageproxy/shared/log/unicorn.log"
+stdout_path "/var/www/imageproxy/shared/log/unicorn.log"
 
 after_fork do |server, worker|
   # per-process listener ports for debugging/admin/migrations

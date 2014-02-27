@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# Usage: ./dockerize sales01.lokalebasen.dk
+#
+set -e
+BUILD_DIR=/tmp/deploy-imageproxy
+
+if [ -z "$BRANCH" ]
+  then
+  BRANCH=master
+fi
+
+REVISION=`git rev-parse --short $BRANCH`
+
+BUILD_FILE=${BUILD_DIR}/build.tar
+TMP_BUILD_FILE=${BUILD_DIR}/build-${REVISION}.tar
+
+# SERVER=$1
+
+# if [ -z "$SERVER" ]
+#     then
+#     echo "No target server specified"
+#     exit 1
+# fi
+
+# # Create SSH Tunnel
+# ssh -N -L 64243:127.0.0.1:4243 $SERVER &
+# SSH_PID=$!
+# trap "kill $SSH_PID" INT TERM EXIT
+
+# # Allow SSH Tunnels to start up
+# sleep 3
+
+# # Determine etcd node name
+# ETCD_NODE_NAME=`ssh $SERVER docker ps |grep "coreos/etcd" | sed -n 's/.*\(etcd-node.*\)/\1/p'`
+
+# # Determine etcd url
+# ETCD_URL=`ssh $SERVER docker inspect $ETCD_NODE_NAME |jq '.[0].NetworkSettings.Ports[][0]' | grep -v null | jq --raw-output '"\(.HostIp):\(.HostPort)"' | sed -n '/[0-9\.]*:5/p'`
+
+# # Setup
+# export DOCKER_HOST=tcp://127.0.0.1:64243
+
+# # Determine server local net ip
+# SERVER_LOCAL_IP=`ssh $SERVER hostname -I | sed -n 's/.*\(192\.168\.3\.[0-9]*\).*/\1/p'`
+
+# Make a deploy directory:
+mkdir -p $BUILD_DIR
+
+# Make a tarball of the code:
+git archive -o $TMP_BUILD_FILE $REVISION
+
+if [ ! -f $BUILD_FILE ]
+then
+  touch $BUILD_FILE
+fi
+
+# Docker will look at the mtime of the $BUILD_FILE to determine
+# if it has changed, so we only copy in a new build file if the
+# checksum has changed.
+TMP_CHKSM=`md5 -q $TMP_BUILD_FILE`
+BUILD_CHKSM=`md5 -q $BUILD_FILE`
+
+if [ "$TMP_CHKSM" != "$BUILD_CHKSM" ]
+then
+  echo "New tarball"
+  mv $TMP_BUILD_FILE $BUILD_FILE
+fi
+
+# Copy relevant files to Deploy dir
+rsync -a Dockerfile Gemfile Gemfile.lock $BUILD_DIR/
+
+# Build it
+docker build -t docker.lokalebasen.dk/imageproxy $BUILD_DIR
+docker tag docker.lokalebasen.dk/imageproxy docker.lokalebasen.dk/imageproxy:$REVISION
+
+# Run it
+CONTAINER_ID=$(docker run -p 8080 -d docker.lokalebasen.dk/imageproxy)
+
