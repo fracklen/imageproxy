@@ -34,6 +34,8 @@ WORKDIR /var/www/imageproxy/release
 RUN bundle install --deployment --quiet
 
 EXPOSE 8080
+EXPOSE 80
+EXPOSE 1080
 
 # ENTRYPOINT ["etcdenv"]
 

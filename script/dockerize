@@ -74,5 +74,5 @@ docker build -t docker.lokalebasen.dk/imageproxy $BUILD_DIR
 docker tag docker.lokalebasen.dk/imageproxy docker.lokalebasen.dk/imageproxy:$REVISION
 
 # Run it
-CONTAINER_ID=$(docker run -p 8080 -d docker.lokalebasen.dk/imageproxy)
+CONTAINER_ID=$(docker run -d -p 80 -p 1080 -p 8080 docker.lokalebasen.dk/imageproxy)
 
