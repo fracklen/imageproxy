@@ -15,33 +15,33 @@ REVISION=`git rev-parse --short $BRANCH`
 BUILD_FILE=${BUILD_DIR}/build.tar
 TMP_BUILD_FILE=${BUILD_DIR}/build-${REVISION}.tar
 
-# SERVER=$1
+SERVER=$1
 
-# if [ -z "$SERVER" ]
-#     then
-#     echo "No target server specified"
-#     exit 1
-# fi
+if [ -z "$SERVER" ]
+    then
+    echo "No target server specified"
+    exit 1
+fi
 
 # # Create SSH Tunnel
-# ssh -N -L 64243:127.0.0.1:4243 $SERVER &
-# SSH_PID=$!
-# trap "kill $SSH_PID" INT TERM EXIT
+ssh -N -L 64243:127.0.0.1:4243 $SERVER &
+SSH_PID=$!
+trap "kill $SSH_PID" INT TERM EXIT
 
 # # Allow SSH Tunnels to start up
-# sleep 3
+sleep 3
 
 # # Determine etcd node name
-# ETCD_NODE_NAME=`ssh $SERVER docker ps |grep "coreos/etcd" | sed -n 's/.*\(etcd-node.*\)/\1/p'`
+ETCD_NODE_NAME=`ssh $SERVER docker ps |grep "coreos/etcd" | sed -n 's/.*\(etcd-node.*\)/\1/p'`
 
 # # Determine etcd url
-# ETCD_URL=`ssh $SERVER docker inspect $ETCD_NODE_NAME |jq '.[0].NetworkSettings.Ports[][0]' | grep -v null | jq --raw-output '"\(.HostIp):\(.HostPort)"' | sed -n '/[0-9\.]*:5/p'`
+ETCD_URL=`ssh $SERVER docker inspect $ETCD_NODE_NAME |jq '.[0].NetworkSettings.Ports[][0]' | grep -v null | jq --raw-output '"\(.HostIp):\(.HostPort)"' | sed -n '/[0-9\.]*:5/p'`
 
 # # Setup
-# export DOCKER_HOST=tcp://127.0.0.1:64243
+export DOCKER_HOST=tcp://127.0.0.1:64243
 
 # # Determine server local net ip
-# SERVER_LOCAL_IP=`ssh $SERVER hostname -I | sed -n 's/.*\(192\.168\.3\.[0-9]*\).*/\1/p'`
+SERVER_LOCAL_IP=`ssh $SERVER hostname -I | sed -n 's/.*\(192\.168\.3\.[0-9]*\).*/\1/p'`
 
 # Make a deploy directory:
 mkdir -p $BUILD_DIR
@@ -74,5 +74,16 @@ docker build -t docker.lokalebasen.dk/imageproxy $BUILD_DIR
 docker tag docker.lokalebasen.dk/imageproxy docker.lokalebasen.dk/imageproxy:$REVISION
 
 # Run it
-CONTAINER_ID=$(docker run -d -p 80 -p 1080 -p 8080 docker.lokalebasen.dk/imageproxy)
+CONTAINER_ID=$(docker run -d -p $SERVER_LOCAL_IP::80 -p $SERVER_LOCAL_IP::1080 -p $SERVER_LOCAL_IP::8080 docker.lokalebasen.dk/imageproxy)
+
+CONTAINER_URL=$(docker port $CONTAINER_ID 80)
+
+
+ssh $SERVER curl $ETCD_URL/v2/keys/sites-available/imageproxy/DOMAIN -XPUT -d value="imageproxy.lokalebasen.dk"
+ssh $SERVER curl $ETCD_URL/v2/keys/sites-available/imageproxy/ROOT -XPUT -d value="/"
+
+ssh $SERVER curl $ETCD_URL/v2/keys/imageproxy/nodes/${REVISION}/$SERVER_LOCAL_IP -XPUT -d value="CONTAINER_URL"
+ssh $SERVER curl $ETCD_URL/v2/keys/imageproxy/current_revision -XPUT -d value="$REVISION"
+
+ssh $SERVER curl $ETCD_URL/v2/keys/sites-enabled/imageproxy -XPUT -d value="imageproxy"
 
